@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Geografi – Flashcards (Mobilvänlig)</title>
+<title>Flashcards – Allmänt (Mobilvänlig)</title>
 <meta name="theme-color" content="#0f172a" />
 <style>
   :root{
@@ -27,11 +27,12 @@
   .info{font-size:12px; color:var(--muted)}
   .panel{margin-top:12px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:12px}
   .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-  select, button{
+  select, button, input[type="url"], input[type="text"], input[type="file"]{
     flex:0 0 auto; font-size:16px; border-radius:12px; padding:10px 12px;
     background:#0b1224; color:var(--text); border:1px solid var(--border);
     touch-action:manipulation;
   }
+  input[type="url"], input[type="text"], input[type="file"]{ width: min(380px, 100%); }
   button:active{transform:scale(.98)}
   .btn-pri{border-color: rgba(34,211,238,.45)}
   .btn-good{border-color: rgba(52,211,153,.45)}
@@ -59,7 +60,7 @@
       <div class="brand">
         <div class="logo" aria-hidden="true"></div>
         <div>
-          <h1>Geografi – Flashcards</h1>
+          <h1>Flashcards</h1>
           <div class="info" id="stats-line">0 kort</div>
         </div>
       </div>
@@ -74,6 +75,14 @@
         <button id="btn-shuffle" class="btn-pri">Blanda</button>
         <button id="btn-reset">Återställ</button>
       </div>
+      <div class="row">
+        <input id="file-input" type="file" multiple accept=".json,.csv,.tsv" aria-label="Ladda filer (JSON/CSV)">
+        <input id="url-input" type="url" placeholder="https://exempel.se/kort.json eller .csv" aria-label="Klistra in URL till JSON/CSV">
+        <button id="btn-load-url" class="btn-pri">Ladda URL</button>
+        <button id="btn-load-sample">Exempelkort</button>
+        <button id="btn-clear">Töm kort</button>
+      </div>
+      <div class="info">Format: JSON [{id?, cat?, q, a}] eller CSV med rubrikerna id,cat,q,a</div>
     </section>
 
     <section>
@@ -99,43 +108,17 @@
   </nav>
 
 <script>
-/* --- Data --- */
-const CARDS = [
-  {id:1, cat:"Ekvatorn & årstider", q:"Vad är speciellt med solens strålar vid ekvatorn, och hur påverkar det klimatet där?", a:"Strålarna träffar nästan rakt uppifrån året runt → hög temperatur och mycket nederbörd (tropiskt klimat)."},
-  {id:2, cat:"Ekvatorn & årstider", q:"Om du bor norr om ekvatorn och reser söderut, vad händer med årstiderna?", a:"De blir omvända: när det är sommar på norra halvklotet är det vinter på södra, och tvärtom."},
-  {id:3, cat:"Väderstreck", q:"Varför är det viktigt att känna till väderstrecken när man använder en karta?", a:"För att kunna orientera kartan rätt och förstå riktningar i terrängen."},
-  {id:4, cat:"Väderstreck", q:"Om du står med ryggen mot söder, vilket väderstreck har du framför dig?", a:"Norr."},
-  {id:5, cat:"Skala", q:"Skalan är 1:50 000. Hur lång sträcka i verkligheten motsvarar 5 cm på kartan?", a:"5 cm × 50 000 = 250 000 cm = 2,5 km."},
-  {id:6, cat:"Skala", q:"Varför är en karta med skalan 1:1 000 mer detaljerad än en karta med skalan 1:1 000 000?", a:"För att 1 cm motsvarar 10 m istället för 10 km – fler detaljer ryms."},
-  {id:7, cat:"Topografisk karta", q:"Vad kan du läsa ut från höjdkurvor på en topografisk karta?", a:"Höjdskillnader, lutning, dalar och berg (terrängens form)."},
-  {id:8, cat:"Topografisk karta", q:"Varför är en topografisk karta extra användbar för vandring?", a:"Den visar terräng och höjdskillnader samt stigar/vägar – hjälper att planera svårighetsgrad och rutt."},
-  {id:9, cat:"Tematisk karta", q:"Ge tre exempel på vad en tematisk karta kan visa.", a:"Klimat, befolkningstäthet, naturresurser (t.ex. skog, malm)."},
-  {id:10, cat:"Tematisk karta", q:"Vilken karta använder du för att visa var de flesta människor bor i ett land?", a:"En befolkningstäthetskarta (tematisk)."},
-  {id:11, cat:"Klimat vs väder", q:"Förklara skillnaden mellan klimat och väder.", a:"Klimat = genomsnitt under lång tid; väder = aktuella förhållanden här och nu."},
-  {id:12, cat:"Klimat vs väder", q:"Hur arbetar en meteorolog jämfört med en klimatolog?", a:"Meteorolog förutspår kortsiktigt väder med observationer/modeller; klimatolog studerar långsiktiga mönster/statistik."},
-  {id:13, cat:"Klimatzoner", q:"Varför är tropiskt klimat varmt och fuktigt året runt?", a:"Solinstrålningen är stark och jämn; hög avdunstning ger mycket fukt och nederbörd."},
-  {id:14, cat:"Klimatzoner", q:"Vilken klimatzon tillhör Sverige och vad kännetecknar den?", a:"Tempererad zon – tydliga årstider, relativt milda somrar och kalla vintrar."},
-  {id:15, cat:"Vittring", q:"Hur kan frost orsaka vittring på en sten?", a:"Vatten fryser och expanderar i sprickor → stenen sprängs (frostsprängning)."},
-  {id:16, cat:"Vittring", q:"Hur kan träd orsaka vittring?", a:"Rötter växer in i sprickor och pressar isär stenen (rot-sprängning)."},
-  {id:17, cat:"Vittring", q:"Vad är skillnaden mellan kemisk och mekanisk vittring?", a:"Kemisk: mineral förändras/löses; Mekanisk: fysisk sönderdelning utan kemisk förändring."},
-  {id:18, cat:"Erosion", q:"Ge exempel på hur vatten kan skapa erosion.", a:"Floder skär dalar och transporterar sediment; vågor bryter ner kuster."},
-  {id:19, cat:"Erosion", q:"Hur förändrar en glaciär landskapet?", a:"Isen slipar och skrapar berg → U-dalar, räfflor, moräner och rullstensåsar."},
-  {id:20, cat:"Vattnets kretslopp", q:"Nämn tre viktigaste steg i vattnets kretslopp.", a:"Avdunstning → kondensation → nederbörd (samt avrinning/infiltration)."},
-  {id:21, cat:"Vattnets kretslopp", q:"Vad händer om ett steg i kretsloppet upphör?", a:"Balansen rubbas, t.ex. mindre kondensation → mindre regn → torka och påverkan på ekosystem."},
-  {id:22, cat:"Endogena & exogena krafter", q:"Vad är endogena krafter? Nämn tre processer.", a:"Krafter från jordens inre: plattrörelser/bergskedjeveckning, jordbävningar, vulkanism."},
-  {id:23, cat:"Endogena & exogena krafter", q:"Hur kan plattrörelser skapa både bergskedjor och jordbävningar?", a:"Kollision bygger berg; låsningar och plötsliga rörelser i plattgränser ger jordbävningar."},
-  {id:24, cat:"Endogena & exogena krafter", q:"Varför är en vulkan ett exempel på endogen process?", a:"Drivs av värme och magma från jordens inre (manteln)."},
-  {id:25, cat:"Endogena & exogena krafter", q:"Vad är exogena krafter? Namnge två processer och drivkrafter.", a:"Nedbrytande processer vid ytan (vittring, erosion) drivna av vatten, vind och is."},
-  {id:26, cat:"Endogena & exogena krafter", q:"Ge ett exempel på hur vatten kan skapa både vittring och erosion.", a:"Vatten löser upp mineral (kemisk vittring) och för bort material i floder (erosion)."},
-  {id:27, cat:"Endogena & exogena krafter", q:"Hur kan vind forma ett landskap och var är det mest utsatt?", a:"Vind transporterar/sandar bort material → dyner, deflationsytor; särskilt i öknar och kustlandskap."},
-  {id:28, cat:"Endogena & exogena krafter", q:"Vad är största skillnaden mellan endogena och exogena krafter?", a:"Endogena bygger upp (höjer/veckar); exogena bryter ner och utjämnar."},
-  {id:29, cat:"Endogena & exogena krafter", q:"Vilken typ av kraft bygger upp landskapet och vilken bryter ner det?", a:"Endogena bygger upp; exogena bryter ner."},
-  {id:30, cat:"Endogena & exogena krafter", q:"Ge exempel på landskap där båda har verkat och hur.", a:"Alperna: uppbyggda av plattkollision (endogent) och formade av glaciärer/floder som eroderat dalar (exogent)."}
+/* --- Data / Innehållskällor --- */
+const SAMPLE_CARDS = [
+  {id:"sample-1", cat:"Exempel", q:"Vad är 2 + 2?", a:"4"},
+  {id:"sample-2", cat:"Exempel", q:"Huvudstad i Sverige?", a:"Stockholm"},
+  {id:"sample-3", cat:"Exempel", q:"Engelska för 'äpple'?", a:"apple"}
 ];
+let allCards = [];
 
 /* --- State --- */
 let state = {
-  deck: [...CARDS],
+  deck: [],
   index: 0,
   showAnswer: false,
   streak: 0,
@@ -172,19 +155,145 @@ const els = {
   btnReset: document.getElementById('btn-reset'),
   btnHelp: document.getElementById('btn-help'),
   btnFull: document.getElementById('btn-full'),
+  fileInput: document.getElementById('file-input'),
+  urlInput: document.getElementById('url-input'),
+  btnLoadUrl: document.getElementById('btn-load-url'),
+  btnLoadSample: document.getElementById('btn-load-sample'),
+  btnClear: document.getElementById('btn-clear'),
 };
 
-/* --- Init --- */
-Array.from(new Set(CARDS.map(c=>c.cat))).forEach(cat=>{
-  const opt = document.createElement('option');
-  opt.value = cat; opt.textContent = cat; els.category.appendChild(opt);
-});
+/* --- Hjälpfunktioner för laddning/parsing --- */
+function rebuildCategoryOptions(){
+  const existing = new Set();
+  els.category.innerHTML = '';
+  const allOpt = document.createElement('option');
+  allOpt.value = 'ALLA'; allOpt.textContent = 'Alla kategorier';
+  els.category.appendChild(allOpt);
+  Array.from(new Set(allCards.map(c => c.cat || 'Okategoriserad'))).forEach(cat => {
+    if(existing.has(cat)) return; existing.add(cat);
+    const opt = document.createElement('option');
+    opt.value = cat; opt.textContent = cat; els.category.appendChild(opt);
+  });
+}
+
+function simpleCsvParse(line){
+  const cells = [];
+  let cur = '', inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch==='"'){
+      if(inQuotes && line[i+1]==='"'){ cur+='"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if(ch===',' && !inQuotes){ cells.push(cur); cur=''; }
+    else { cur += ch; }
+  }
+  cells.push(cur);
+  return cells.map(s=>s.trim());
+}
+
+function parseCSV(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+  if(lines.length===0) return [];
+  const header = simpleCsvParse(lines[0]).map(h=>h.toLowerCase());
+  const idx = {
+    id: header.indexOf('id'),
+    cat: header.indexOf('cat'),
+    q: header.indexOf('q'),
+    a: header.indexOf('a')
+  };
+  const out = [];
+  for(let i=1;i<lines.length;i++){
+    const row = simpleCsvParse(lines[i]);
+    const q = idx.q>=0 ? row[idx.q] : undefined;
+    const a = idx.a>=0 ? row[idx.a] : undefined;
+    if(!q || !a) continue;
+    const cat = idx.cat>=0 ? row[idx.cat] : 'Okategoriserad';
+    const id = idx.id>=0 && row[idx.id] ? row[idx.id] : undefined;
+    out.push({id, cat, q, a});
+  }
+  return out;
+}
+
+function tryParseJSON(text){
+  try{
+    const obj = JSON.parse(text);
+    if(Array.isArray(obj)) return obj;
+    if(Array.isArray(obj.cards)) return obj.cards;
+    return [];
+  } catch(e){ return null; }
+}
+
+function normalizeCards(rawCards, sourceLabel){
+  const normalized = [];
+  for(let i=0;i<rawCards.length;i++){
+    const r = rawCards[i] || {};
+    if(!r.q || !r.a) continue;
+    const idBase = r.id || `${sourceLabel||'src'}-${i+1}-${(String(r.q)+':'+String(r.a)).slice(0,24)}`;
+    normalized.push({
+      id: String(idBase),
+      cat: r.cat ? String(r.cat) : 'Okategoriserad',
+      q: String(r.q),
+      a: String(r.a)
+    });
+  }
+  return normalized;
+}
+
+function addCards(cards, sourceLabel){
+  const toAdd = normalizeCards(cards, sourceLabel);
+  const existingIds = new Set(allCards.map(c=>c.id));
+  const deduped = toAdd.map(c=>{
+    let id = c.id; let n=2;
+    while(existingIds.has(id)){ id = `${c.id}#${n++}`; }
+    existingIds.add(id);
+    return {...c, id};
+  });
+  allCards = allCards.concat(deduped);
+  applyFilter();
+  rebuildCategoryOptions();
+  render();
+}
+
+async function loadFromURL(url){
+  if(!url) return alert('Ange en URL.');
+  try{
+    const res = await fetch(url);
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const ct = res.headers.get('content-type')||'';
+    const text = await res.text();
+    let parsed = null;
+    if(ct.includes('json') || url.toLowerCase().endsWith('.json')){
+      parsed = tryParseJSON(text);
+      if(parsed===null) throw new Error('Kunde inte tolka JSON');
+    } else {
+      parsed = parseCSV(text);
+    }
+    addCards(parsed, url);
+  } catch(e){
+    alert('Misslyckades att ladda URL: '+ e.message);
+  }
+}
+
+function loadFromFiles(fileList){
+  const files = Array.from(fileList||[]);
+  if(files.length===0) return;
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const text = String(reader.result||'');
+      let parsed = tryParseJSON(text);
+      if(parsed===null){ parsed = parseCSV(text); }
+      addCards(parsed, file.name);
+    };
+    reader.onerror = ()=> alert('Kunde inte läsa filen: '+file.name);
+    reader.readAsText(file);
+  });
+}
 
 function applyFilter(){
   const f = state.filter;
-  state.deck = CARDS.filter(c => f==='ALLA' ? true : c.cat===f);
+  state.deck = allCards.filter(c => f==='ALLA' ? true : c.cat===f);
   if(state.index >= state.deck.length) state.index = 0;
-  render();
 }
 
 function render(){
@@ -193,8 +302,8 @@ function render(){
   els.statsLine.textContent = `${total} kort • ${done} klara • Streak ${state.streak}`;
 
   if(total===0){
-    els.cardContent.textContent = 'Inga kort i denna kategori.';
-    els.hint.textContent = '';
+    els.cardContent.textContent = 'Inga kort laddade. Lägg till via Fil eller URL.';
+    els.hint.textContent = 'Format: JSON [{q,a,cat?}] eller CSV (id,cat,q,a)';
     els.bar.style.width = '0%';
     els.footer.textContent = '';
     return;
@@ -230,6 +339,9 @@ function reset(){
   }
 }
 
+/* --- Init --- */
+rebuildCategoryOptions();
+
 /* --- Event bindings (tap-first) --- */
 els.btnNext.addEventListener('click', next);
 els.btnPrev.addEventListener('click', prev);
@@ -246,7 +358,17 @@ els.btnFull.addEventListener('click', ()=>{
   const r = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
   if(r) r.call(el);
 });
-els.category.addEventListener('change', (e)=>{ state.filter = e.target.value; state.index=0; state.showAnswer=false; applyFilter(); });
+els.category.addEventListener('change', (e)=>{ state.filter = e.target.value; state.index=0; state.showAnswer=false; applyFilter(); render(); });
+els.fileInput.addEventListener('change', (e)=> loadFromFiles(e.target.files));
+els.btnLoadUrl.addEventListener('click', ()=> loadFromURL(els.urlInput.value.trim()));
+els.btnLoadSample.addEventListener('click', ()=> addCards(SAMPLE_CARDS, 'exempel'));
+els.btnClear.addEventListener('click', ()=>{
+  if(confirm('Tömma alla laddade kort?')){
+    allCards = [];
+    state.index = 0; state.showAnswer=false; state.streak=0;
+    applyFilter(); rebuildCategoryOptions(); render();
+  }
+});
 
 // Tap on card to flip
 els.card.addEventListener('click', flip);
