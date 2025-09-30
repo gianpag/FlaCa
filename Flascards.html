@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Geografi – Flashcards (Mobilvänlig)</title>
+<meta name="theme-color" content="#0f172a" />
+<style>
+  :root{
+    --bg:#0f172a; --panel:#0c1224; --muted:#9aa5b1; --text:#ecf0f1;
+    --primary:#22d3ee; --accent:#a78bfa; --good:#34d399; --bad:#f87171;
+    --border: rgba(255,255,255,.12);
+    --radius: 14px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg); color:var(--text);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
+  .wrap{max-width:780px; margin:0 auto; padding:16px; padding-bottom:80px}
+  header{display:flex; align-items:center; gap:12px; justify-content:space-between}
+  .brand{display:flex; align-items:center; gap:10px}
+  .logo{width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, var(--primary), var(--accent))}
+  h1{margin:0; font-size:20px}
+  .info{font-size:12px; color:var(--muted)}
+  .panel{margin-top:12px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:12px}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  select, button{
+    flex:0 0 auto; font-size:16px; border-radius:12px; padding:10px 12px;
+    background:#0b1224; color:var(--text); border:1px solid var(--border);
+    touch-action:manipulation;
+  }
+  button:active{transform:scale(.98)}
+  .btn-pri{border-color: rgba(34,211,238,.45)}
+  .btn-good{border-color: rgba(52,211,153,.45)}
+  .btn-bad{border-color: rgba(248,113,113,.45)}
+  .card{
+    margin-top:14px; min-height:180px; display:flex; align-items:center; justify-content:center;
+    background:#0b1224; border:1px solid var(--border); border-radius: calc(var(--radius) + 4px);
+    padding:18px; text-align:center;
+  }
+  .q{font-size:18px; line-height:1.35}
+  .a{font-size:18px; color:#d1fae5}
+  .hint{font-size:12px; color:var(--muted); margin-top:6px; text-align:center}
+  .actions{position:sticky; bottom:0; left:0; right:0; background:linear-gradient(0deg, rgba(15,23,42,.95), rgba(15,23,42,.85));
+    padding:10px 12px; border-top:1px solid var(--border); display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px}
+  .btn-big{padding:14px 10px; font-weight:600}
+  .progress{margin-top:10px}
+  .bar{height:10px; background:#0a1020; border:1px solid var(--border); border-radius:999px; overflow:hidden}
+  .bar>span{display:block; height:100%; background:linear-gradient(90deg, var(--primary), var(--accent)); width:0%}
+  .footer{margin-top:6px; font-size:12px; color:var(--muted); text-align:center}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Geografi – Flashcards</h1>
+          <div class="info" id="stats-line">0 kort</div>
+        </div>
+      </div>
+      <button id="btn-help" aria-label="Hjälp">❓</button>
+    </header>
+
+    <section class="panel">
+      <div class="row">
+        <select id="category" aria-label="Välj kategori">
+          <option value="ALLA">Alla kategorier</option>
+        </select>
+        <button id="btn-shuffle" class="btn-pri">Blanda</button>
+        <button id="btn-reset">Återställ</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="card" id="card" role="button" aria-pressed="false" aria-roledescription="flashcard">
+        <div id="card-content" class="q">Laddar …</div>
+      </div>
+      <div class="hint" id="hint">Tryck på kortet för att vända</div>
+
+      <div class="progress">
+        <div class="bar"><span id="bar"></span></div>
+      </div>
+      <div class="footer" id="footer"></div>
+    </section>
+  </div>
+
+  <nav class="actions" aria-label="Kontroller">
+    <button id="btn-prev" class="btn-big">◀︎ Förra</button>
+    <button id="btn-flip" class="btn-big btn-pri">Visa svar</button>
+    <button id="btn-next" class="btn-big">Nästa ▶︎</button>
+    <button id="btn-good" class="btn-big btn-good">Kunde</button>
+    <button id="btn-bad" class="btn-big btn-bad">Inte kunde</button>
+    <button id="btn-full" class="btn-big">Fullskärm</button>
+  </nav>
+
+<script>
+/* --- Data --- */
+const CARDS = [
+  {id:1, cat:"Ekvatorn & årstider", q:"Vad är speciellt med solens strålar vid ekvatorn, och hur påverkar det klimatet där?", a:"Strålarna träffar nästan rakt uppifrån året runt → hög temperatur och mycket nederbörd (tropiskt klimat)."},
+  {id:2, cat:"Ekvatorn & årstider", q:"Om du bor norr om ekvatorn och reser söderut, vad händer med årstiderna?", a:"De blir omvända: när det är sommar på norra halvklotet är det vinter på södra, och tvärtom."},
+  {id:3, cat:"Väderstreck", q:"Varför är det viktigt att känna till väderstrecken när man använder en karta?", a:"För att kunna orientera kartan rätt och förstå riktningar i terrängen."},
+  {id:4, cat:"Väderstreck", q:"Om du står med ryggen mot söder, vilket väderstreck har du framför dig?", a:"Norr."},
+  {id:5, cat:"Skala", q:"Skalan är 1:50 000. Hur lång sträcka i verkligheten motsvarar 5 cm på kartan?", a:"5 cm × 50 000 = 250 000 cm = 2,5 km."},
+  {id:6, cat:"Skala", q:"Varför är en karta med skalan 1:1 000 mer detaljerad än en karta med skalan 1:1 000 000?", a:"För att 1 cm motsvarar 10 m istället för 10 km – fler detaljer ryms."},
+  {id:7, cat:"Topografisk karta", q:"Vad kan du läsa ut från höjdkurvor på en topografisk karta?", a:"Höjdskillnader, lutning, dalar och berg (terrängens form)."},
+  {id:8, cat:"Topografisk karta", q:"Varför är en topografisk karta extra användbar för vandring?", a:"Den visar terräng och höjdskillnader samt stigar/vägar – hjälper att planera svårighetsgrad och rutt."},
+  {id:9, cat:"Tematisk karta", q:"Ge tre exempel på vad en tematisk karta kan visa.", a:"Klimat, befolkningstäthet, naturresurser (t.ex. skog, malm)."},
+  {id:10, cat:"Tematisk karta", q:"Vilken karta använder du för att visa var de flesta människor bor i ett land?", a:"En befolkningstäthetskarta (tematisk)."},
+  {id:11, cat:"Klimat vs väder", q:"Förklara skillnaden mellan klimat och väder.", a:"Klimat = genomsnitt under lång tid; väder = aktuella förhållanden här och nu."},
+  {id:12, cat:"Klimat vs väder", q:"Hur arbetar en meteorolog jämfört med en klimatolog?", a:"Meteorolog förutspår kortsiktigt väder med observationer/modeller; klimatolog studerar långsiktiga mönster/statistik."},
+  {id:13, cat:"Klimatzoner", q:"Varför är tropiskt klimat varmt och fuktigt året runt?", a:"Solinstrålningen är stark och jämn; hög avdunstning ger mycket fukt och nederbörd."},
+  {id:14, cat:"Klimatzoner", q:"Vilken klimatzon tillhör Sverige och vad kännetecknar den?", a:"Tempererad zon – tydliga årstider, relativt milda somrar och kalla vintrar."},
+  {id:15, cat:"Vittring", q:"Hur kan frost orsaka vittring på en sten?", a:"Vatten fryser och expanderar i sprickor → stenen sprängs (frostsprängning)."},
+  {id:16, cat:"Vittring", q:"Hur kan träd orsaka vittring?", a:"Rötter växer in i sprickor och pressar isär stenen (rot-sprängning)."},
+  {id:17, cat:"Vittring", q:"Vad är skillnaden mellan kemisk och mekanisk vittring?", a:"Kemisk: mineral förändras/löses; Mekanisk: fysisk sönderdelning utan kemisk förändring."},
+  {id:18, cat:"Erosion", q:"Ge exempel på hur vatten kan skapa erosion.", a:"Floder skär dalar och transporterar sediment; vågor bryter ner kuster."},
+  {id:19, cat:"Erosion", q:"Hur förändrar en glaciär landskapet?", a:"Isen slipar och skrapar berg → U-dalar, räfflor, moräner och rullstensåsar."},
+  {id:20, cat:"Vattnets kretslopp", q:"Nämn tre viktigaste steg i vattnets kretslopp.", a:"Avdunstning → kondensation → nederbörd (samt avrinning/infiltration)."},
+  {id:21, cat:"Vattnets kretslopp", q:"Vad händer om ett steg i kretsloppet upphör?", a:"Balansen rubbas, t.ex. mindre kondensation → mindre regn → torka och påverkan på ekosystem."},
+  {id:22, cat:"Endogena & exogena krafter", q:"Vad är endogena krafter? Nämn tre processer.", a:"Krafter från jordens inre: plattrörelser/bergskedjeveckning, jordbävningar, vulkanism."},
+  {id:23, cat:"Endogena & exogena krafter", q:"Hur kan plattrörelser skapa både bergskedjor och jordbävningar?", a:"Kollision bygger berg; låsningar och plötsliga rörelser i plattgränser ger jordbävningar."},
+  {id:24, cat:"Endogena & exogena krafter", q:"Varför är en vulkan ett exempel på endogen process?", a:"Drivs av värme och magma från jordens inre (manteln)."},
+  {id:25, cat:"Endogena & exogena krafter", q:"Vad är exogena krafter? Namnge två processer och drivkrafter.", a:"Nedbrytande processer vid ytan (vittring, erosion) drivna av vatten, vind och is."},
+  {id:26, cat:"Endogena & exogena krafter", q:"Ge ett exempel på hur vatten kan skapa både vittring och erosion.", a:"Vatten löser upp mineral (kemisk vittring) och för bort material i floder (erosion)."},
+  {id:27, cat:"Endogena & exogena krafter", q:"Hur kan vind forma ett landskap och var är det mest utsatt?", a:"Vind transporterar/sandar bort material → dyner, deflationsytor; särskilt i öknar och kustlandskap."},
+  {id:28, cat:"Endogena & exogena krafter", q:"Vad är största skillnaden mellan endogena och exogena krafter?", a:"Endogena bygger upp (höjer/veckar); exogena bryter ner och utjämnar."},
+  {id:29, cat:"Endogena & exogena krafter", q:"Vilken typ av kraft bygger upp landskapet och vilken bryter ner det?", a:"Endogena bygger upp; exogena bryter ner."},
+  {id:30, cat:"Endogena & exogena krafter", q:"Ge exempel på landskap där båda har verkat och hur.", a:"Alperna: uppbyggda av plattkollision (endogent) och formade av glaciärer/floder som eroderat dalar (exogent)."}
+];
+
+/* --- State --- */
+let state = {
+  deck: [...CARDS],
+  index: 0,
+  showAnswer: false,
+  streak: 0,
+  filter: 'ALLA',
+  stats: (function(){
+    // Robust localStorage (safe fallback on mobile file:// and private modes)
+    try {
+      const raw = localStorage.getItem('geoFlashcardsProgressV2');
+      return raw ? JSON.parse(raw) : {correct:{}, wrong:{}};
+    } catch(e){
+      return {correct:{}, wrong:{}, _memoryOnly:true};
+    }
+  })()
+};
+function persist(){
+  try { localStorage.setItem('geoFlashcardsProgressV2', JSON.stringify(state.stats)); } catch(e){ /* memory-only */ }
+}
+
+/* --- Elements --- */
+const els = {
+  category: document.getElementById('category'),
+  statsLine: document.getElementById('stats-line'),
+  card: document.getElementById('card'),
+  cardContent: document.getElementById('card-content'),
+  hint: document.getElementById('hint'),
+  bar: document.getElementById('bar'),
+  footer: document.getElementById('footer'),
+  btnPrev: document.getElementById('btn-prev'),
+  btnNext: document.getElementById('btn-next'),
+  btnFlip: document.getElementById('btn-flip'),
+  btnGood: document.getElementById('btn-good'),
+  btnBad: document.getElementById('btn-bad'),
+  btnShuffle: document.getElementById('btn-shuffle'),
+  btnReset: document.getElementById('btn-reset'),
+  btnHelp: document.getElementById('btn-help'),
+  btnFull: document.getElementById('btn-full'),
+};
+
+/* --- Init --- */
+Array.from(new Set(CARDS.map(c=>c.cat))).forEach(cat=>{
+  const opt = document.createElement('option');
+  opt.value = cat; opt.textContent = cat; els.category.appendChild(opt);
+});
+
+function applyFilter(){
+  const f = state.filter;
+  state.deck = CARDS.filter(c => f==='ALLA' ? true : c.cat===f);
+  if(state.index >= state.deck.length) state.index = 0;
+  render();
+}
+
+function render(){
+  const total = state.deck.length;
+  const done = Object.keys(state.stats.correct||{}).length;
+  els.statsLine.textContent = `${total} kort • ${done} klara • Streak ${state.streak}`;
+
+  if(total===0){
+    els.cardContent.textContent = 'Inga kort i denna kategori.';
+    els.hint.textContent = '';
+    els.bar.style.width = '0%';
+    els.footer.textContent = '';
+    return;
+  }
+  const card = state.deck[state.index];
+  els.cardContent.textContent = state.showAnswer ? card.a : card.q;
+  els.cardContent.className = state.showAnswer ? 'a' : 'q';
+  els.hint.textContent = state.showAnswer ? 'Svar (tryck för att dölja)' : 'Tryck för att vända';
+
+  const pct = Math.min(100, Math.round(((state.index+1)/total)*100));
+  els.bar.style.width = pct + '%';
+  els.footer.textContent = `Kort ${state.index+1}/${total} • ${card.cat}`;
+}
+
+function next(){ state.index = (state.index + 1) % state.deck.length; state.showAnswer=false; render(); }
+function prev(){ state.index = (state.index - 1 + state.deck.length) % state.deck.length; state.showAnswer=false; render(); }
+function flip(){ state.showAnswer = !state.showAnswer; render(); }
+function mark(good){
+  const id = state.deck[state.index].id;
+  if(good){ state.stats.correct[id] = (state.stats.correct[id]||0)+1; state.streak++; }
+  else { state.stats.wrong[id] = (state.stats.wrong[id]||0)+1; state.streak = 0; }
+  persist();
+  next();
+}
+function shuffle(){
+  const a = state.deck;
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  state.index=0; state.showAnswer=false; render();
+}
+function reset(){
+  if(confirm('Återställa framsteg?')){
+    state.stats = {correct:{}, wrong:{}}; persist(); state.streak=0; render();
+  }
+}
+
+/* --- Event bindings (tap-first) --- */
+els.btnNext.addEventListener('click', next);
+els.btnPrev.addEventListener('click', prev);
+els.btnFlip.addEventListener('click', flip);
+els.btnGood.addEventListener('click', ()=>mark(true));
+els.btnBad.addEventListener('click', ()=>mark(false));
+els.btnShuffle.addEventListener('click', shuffle);
+els.btnReset.addEventListener('click', reset);
+els.btnHelp.addEventListener('click', ()=>{
+  alert('Tips:\n• Tryck på kortet för att vända.\n• Blanda för slumpad ordning.\n• Framsteg sparas lokalt om möjligt.\n• Fullskärm fungerar bäst i mobilens webbläsare.');
+});
+els.btnFull.addEventListener('click', ()=>{
+  const el = document.documentElement;
+  const r = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  if(r) r.call(el);
+});
+els.category.addEventListener('change', (e)=>{ state.filter = e.target.value; state.index=0; state.showAnswer=false; applyFilter(); });
+
+// Tap on card to flip
+els.card.addEventListener('click', flip);
+
+// Keyboard (optional; ignored on mobile)
+window.addEventListener('keydown', (e)=>{
+  if(e.key===' '){ e.preventDefault(); flip(); }
+  else if(e.key==='ArrowRight'){ next(); }
+  else if(e.key==='ArrowLeft'){ prev(); }
+  else if(e.key==='1'){ mark(true); }
+  else if(e.key==='2'){ mark(false); }
+});
+
+// Start
+applyFilter();
+render();
+</script>
+</body>
+</html>
